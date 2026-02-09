@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valentine</title>
+
+  <!-- libs (your animations) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Dosis:800|Lobster|Pacifico');
+
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      padding:0;
+      overflow:hidden;
+      background:#ff93a6;
+      font-family:'Dosis', sans-serif;
+    }
+
+    /* SVG background */
+    #canvas{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      background:#ff93a6;
+    }
+    .o_heart{ fill:#FFB3C3; }
+    .i_heart{ fill:#FCE3E9; }
+
+    /* Falling hearts layer (only on YES for 5 sec) */
+    .bg_heart{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      pointer-events:none;
+      z-index:6;
+    }
+    .heart{
+      position:absolute;
+      top:-50%;
+      transform:rotate(-45deg);
+    }
+    .heart:before{
+      position:absolute;
+      top:-50%;
+      left:0;
+      display:block;
+      content:"";
+      width:100%;
+      height:100%;
+      background:inherit;
+      border-radius:100%;
+    }
+    .heart:after{
+      position:absolute;
+      top:0;
+      right:-50%;
+      display:block;
+      content:"";
+      width:100%;
+      height:100%;
+      background:inherit;
+      border-radius:100%;
+    }
+    @keyframes love { 0%{ top:110%; } }
+
+    /* Center UI */
+    .valentine-box{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      text-align:center;
+      z-index:10;
+      width:min(92vw, 900px);
+    }
+
+    .media-wrap{
+      position:relative;
+      width:260px;
+      height:260px;
+      margin:0 auto 18px;
+    }
+    .top-image, .reaction-img{
+      width:260px;
+      height:260px;
+      border-radius:12px;
+      object-fit:cover;
+      border:3px solid #FCE3E9;
+      box-shadow:0 5px 8px rgba(0,0,0,0.15);
+      background:#fff;
+    }
+    .reaction-img{
+      position:absolute;
+      inset:0;
+      display:none;
+    }
+
+    .text{
+      font-weight:800;
+      color:#FFB3C3;
+      background:white;
+      padding:10px 20px;
+      border-radius:6px;
+      border:3px solid #FCE3E9;
+      box-shadow:0 5px 6px rgba(0,0,0,0.1);
+      display:inline-block;
+      max-width:100%;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      font-size:clamp(1.4rem, 3.2vw, 3.5rem);
+      letter-spacing:clamp(1px, 0.35vw, 3px);
+    }
+
+    .text-small{
+      display:none;
+      margin:0 auto 14px;
+      font-size:clamp(1.0rem, 2.0vw, 1.7rem);
+      letter-spacing:clamp(1px, 0.25vw, 2px);
+    }
+
+    .gif-wrap{
+      position:absolute;
+      width:260px;
+      height:260px;
+      border-radius:10px;
+      border:3px solid #FCE3E9;
+      background:white;
+      box-shadow:0 5px 8px rgba(0,0,0,0.15);
+      overflow:hidden;
+      display:none;
+      top:0;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:5;
+    }
+
+    .btn-container{
+      margin-top:18px;
+      position:relative;
+      height:80px; /* play area for No button */
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      align-items:center;
+    }
+
+    .btn{
+      font-family:'Dosis', sans-serif;
+      font-weight:800;
+      font-size:1.5em;
+      letter-spacing:2px;
+      color:#FFB3C3;
+      background:white;
+      border-radius:6px;
+      border:3px solid #FCE3E9;
+      box-shadow:0 5px 6px rgba(0,0,0,0.1);
+      padding:10px 25px;
+      cursor:pointer;
+      transition:transform 0.15s;
+      user-select:none;
+    }
+    .btn:hover{ transform:scale(1.05); }
+
+    .input-wrapper{
+      display:none;
+      margin-top:18px;
+      text-align:center;
+    }
+
+    .input-wrapper input{
+      font-family:'Dosis', sans-serif;
+      font-weight:800;
+      font-size:1.2em;
+      letter-spacing:1px;
+      color:#FFB3C3;
+      background:white;
+      border:3px solid #FCE3E9;
+      border-radius:6px;
+      padding:10px 15px;
+      box-shadow:0 5px 6px rgba(0,0,0,0.1);
+      width:200px;
+      outline:none;
+      transition:0.15s;
+    }
+
+    .input-wrapper input:focus{
+      border-color:#FFB3C3;
+      box-shadow:0 5px 10px rgba(255,179,195,0.3);
+    }
+
+    .input-wrapper button{
+      font-family:'Dosis', sans-serif;
+      font-weight:800;
+      font-size:1.2em;
+      letter-spacing:1px;
+      color:#FFB3C3;
+      background:white;
+      border-radius:6px;
+      border:3px solid #FCE3E9;
+      box-shadow:0 5px 6px rgba(0,0,0,0.1);
+      padding:10px 20px;
+      margin-left:10px;
+      cursor:pointer;
+      transition:transform 0.15s;
+      user-select:none;
+    }
+
+    .input-wrapper button:hover{
+      transform:scale(1.05);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Falling hearts container -->
+  <div class="bg_heart" id="bgHeart"></div>
+
+  <!-- SVG background heart pop animation -->
+  <svg xmlns:xlink="http://www.w3.org/1999/xlink" id="canvas">
+    <defs>
+      <g id="heart">
+        <g>
+          <g>
+            <path class="o_heart" d="M102.7,12.4L102.7,12.4C90.5,0.2,71.3-1,57.7,8.8c-13.6-9.9-32.9-8.7-45.2,3.5l0,0
+              c-13.6,13.6-13.6,35.8,0,49.3L48.8,98c1.8,1.8,4,2.9,6.3,3.3c3.9,0.9,8.2-0.1,11.2-3.2l36.3-36.3C116.2,48.2,116.2,26,102.7,12.4
+              z"/>
+          </g>
+        </g>
+        <g>
+          <g>
+            <path class="i_heart" d="M74.7,34L74.7,34c-4.6-4.6-11.9-5.1-17.1-1.4c-5.2-3.8-12.5-3.3-17.1,1.3c-5.1,5.1-5.1,13.6,0,18.7
+              l13.8,13.8c0.7,0.7,1.5,1.1,2.4,1.3c1.5,0.3,3.1-0.1,4.2-1.2l13.8-13.8C79.9,47.6,79.9,39.2,74.7,34z"/>
+          </g>
+        </g>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="valentine-box">
+    <div class="media-wrap">
+      <img id="topMedia" src="music.jpeg" class="top-image" alt="top" />
+      <img id="reactionImg" src="reaction2.jpeg" class="reaction-img" alt="reaction" />
+    </div>
+
+    <span id="smallText" class="text text-small">Nice try 😏 now be my Valentine 💗</span>
+
+    <div id="gifWrap" class="gif-wrap">
+      <div class="tenor-gif-embed"
+        data-postid="14948683931575825845"
+        data-share-method="host"
+        data-aspect-ratio="1.23881"
+        data-width="100%">
+        <a href="https://tenor.com/view/silly-guy-cursed-yuppie-cute-sweet-gif-14948683931575825845">GIF</a>
+      </div>
+    </div>
+
+    <audio id="yesSound" src="sound.mp3" hidden></audio>
+
+    <span class="text" id="mainText">Preet will you be My Valentine?</span>
+
+    <div class="btn-container" id="btnWrap">
+      <button class="btn yes" id="yesBtn">Yes</button>
+      <button class="btn no" id="noBtn">No</button>
+    </div>
+  </div>
+
+  <script>
+    // ----------------------------
+    // Background SVG popping hearts (d3 + GSAP)
+    // ----------------------------
+    var paper = d3.select("#canvas");
+    var wsvg = $("#canvas").width();
+    var hsvg = $("#canvas").height();
+    var count = 0;
+
+    function spawnHeart(){
+      count++;
+      var x = Math.floor(Math.random() * (wsvg - 100)) + 50;
+      var y = Math.floor(Math.random() * (hsvg - 100)) + 50;
+
+      paper.append("use")
+        .attr("xlink:href", "#heart")
+        .attr("id", "h" + count)
+        .attr("transform", "translate(" + x + ", " + y + ")");
+
+      setTimeLine(count);
+    }
+
+    function setTimeLine(id){
+      var s = (Math.random() * (0.7 - 0.2) + 0.5).toFixed(1);
+      var heart = $("#h" + id);
+      var tl = new TimelineMax({ repeat: 1, yoyo: true });
+
+      tl.from(heart, 0.7, { scale: 0, transformOrigin: "50% 50%" })
+        .to(heart, 0.7, { scale: s, transformOrigin: "50% 50%" })
+        .to(heart, 0.3, { scale: 1, transformOrigin: "50% 50%", opacity: 0 });
+
+      setTimeout(function(){ heart.remove(); }, 1700);
+    }
+
+    function loopHearts(){
+      spawnHeart();
+      var next = Math.ceil((Math.floor(Math.random() * 600) + 100) / 10) * 10;
+      setTimeout(loopHearts, next);
+    }
+    loopHearts();
+
+    $(window).on("resize", function(){
+      wsvg = $("#canvas").width();
+      hsvg = $("#canvas").height();
+    });
+
+    // ----------------------------
+    // Falling hearts effect (for 5 seconds after YES)
+    // ----------------------------
+    let loveInterval = null;
+
+    function startLoveFor5Seconds(){
+      const $bg = $("#bgHeart");
+      if (!$bg.length) return;
+
+      $bg.empty();
+      if (loveInterval) clearInterval(loveInterval);
+
+      loveInterval = setInterval(function(){
+        var r_num  = Math.floor(Math.random() * 40) + 1;
+        var r_size = Math.floor(Math.random() * 65) + 10;
+        var r_left = Math.floor(Math.random() * 100) + 1;
+        var r_bg   = Math.floor(Math.random() * 25) + 100;
+        var r_time = Math.floor(Math.random() * 5) + 5;
+
+        $bg.append(
+          "<div class='heart' style='width:"+r_size+"px;height:"+r_size+
+          "px;left:"+r_left+"%;background:rgba(255,"+(r_bg-25)+","+r_bg+
+          ",1);animation:love "+r_time+"s ease'></div>"
+        );
+
+        $bg.append(
+          "<div class='heart' style='width:"+(r_size-10)+"px;height:"+
+          (r_size-10)+"px;left:"+(r_left+r_num)+"%;background:rgba(255,"+
+          (r_bg-25)+","+(r_bg+25)+",1);animation:love "+(r_time+5)+"s ease'></div>"
+        );
+
+        $bg.find(".heart").each(function(){
+          var top = parseFloat($(this).css("top")) || 0;
+          var width = parseFloat($(this).css("width")) || 0;
+          if (top <= -100 || width >= 150) $(this).remove();
+        });
+      }, 500);
+
+      setTimeout(function(){
+        clearInterval(loveInterval);
+        loveInterval = null;
+        setTimeout(()=>$("#bgHeart").empty(), 2500);
+      }, 5000);
+    }
+
+    // ----------------------------
+    // UI (No escape + Yes action)
+    // ----------------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      window.__VAL__ = {
+        noHoverCount: 0,
+        tenorLoaded: false,
+        noHoverLogged: false, // for firebase session tracking
+      };
+
+      const yesBtn = document.getElementById("yesBtn");
+      const noBtn  = document.getElementById("noBtn");
+      const btnWrap = document.getElementById("btnWrap");
+
+      const topMedia = document.getElementById("topMedia");
+      const reactionImg = document.getElementById("reactionImg");
+      const yesSound = document.getElementById("yesSound");
+      const mainText = document.getElementById("mainText");
+      const smallText = document.getElementById("smallText");
+      const gifWrap = document.getElementById("gifWrap");
+
+      if (!yesBtn || !noBtn || !btnWrap) return;
+
+      function loadTenorOnce(){
+        if (window.__VAL__.tenorLoaded) return;
+        window.__VAL__.tenorLoaded = true;
+        const s = document.createElement("script");
+        s.src = "https://tenor.com/embed.js";
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      function moveNoInsideButtons(){
+        btnWrap.style.position = "relative";
+        noBtn.style.position = "absolute";
+
+        const pad = 6;
+        const wrapW = btnWrap.clientWidth;
+        const wrapH = btnWrap.clientHeight;
+
+        const bw = noBtn.offsetWidth;
+        const bh = noBtn.offsetHeight;
+
+        const maxX = Math.max(pad, wrapW - bw - pad);
+        const maxY = Math.max(pad, wrapH - bh - pad);
+
+        const x = Math.random() * (maxX - pad) + pad;
+        const y = Math.random() * (maxY - pad) + pad;
+
+        noBtn.style.left = x + "px";
+        noBtn.style.top  = y + "px";
+        noBtn.style.zIndex = "3000";
+      }
+
+      function makeYesBigger(){
+        const current = parseFloat(getComputedStyle(yesBtn).fontSize);
+        yesBtn.style.fontSize = (current + 2) + "px";
+      }
+
+      function triggerGifMode(){
+        if (smallText) smallText.style.display = "inline-block";
+        if (topMedia) topMedia.style.display = "none";
+        if (gifWrap) gifWrap.style.display = "block";
+        loadTenorOnce();
+      }
+
+      function escape(e){
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        window.__VAL__.noHoverCount++;
+        moveNoInsideButtons();
+        makeYesBigger();
+        if (window.__VAL__.noHoverCount >= 2) triggerGifMode();
+        return false;
+      }
+
+      noBtn.addEventListener("mouseenter", escape);
+      noBtn.addEventListener("mousedown", escape);
+      noBtn.addEventListener("click", escape);
+
+      yesBtn.addEventListener("click", () => {
+        if (yesSound){
+          yesSound.currentTime = 0;
+          yesSound.play().catch(()=>{});
+        }
+
+        if (mainText) mainText.innerText = "okkkkk be readyyy 💕";
+
+        if (reactionImg) reactionImg.style.display = "block";
+        if (topMedia) topMedia.style.display = "none";
+
+        // remove NO button
+        if (noBtn) noBtn.remove();
+
+        // hide gif/text
+        if (smallText) smallText.style.display = "none";
+        if (gifWrap) gifWrap.style.display = "none";
+
+        // Show input and button
+        const inputWrapper = document.getElementById("inputWrapper");
+        if (inputWrapper) inputWrapper.style.display = "block";
+
+        // hearts for 5 sec
+        startLoveFor5Seconds();
+      });
+    });
+  </script>
+
+  <!-- ----------------------------
+       FIREBASE (Firestore) TRACKING
+       Paste your firebaseConfig here
+       ---------------------------- -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, updateDoc, increment, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    // ✅ PASTE YOUR CONFIG FROM FIREBASE CONSOLE
+    const firebaseConfig = {
+      apiKey: "AIzaSyBaPuCdflLnZJkpEoEUZ6DTKCcQ9CmdLo4",
+  authDomain: "turea-2452b.firebaseapp.com",
+  projectId: "turea-2452b",
+  storageBucket: "turea-2452b.firebasestorage.app",
+  messagingSenderId: "406829970034",
+  appId: "1:406829970034:web:807daf84c8b1f8bc5288eb",
+     measurementId: "G-TWSJ9LVHX6"
+      // measurementId optional
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // unique per browser
+    const VISITOR_KEY = "visitor_id_v1";
+    let visitorId = localStorage.getItem(VISITOR_KEY);
+    if (!visitorId) {
+      visitorId = crypto.randomUUID();
+      localStorage.setItem(VISITOR_KEY, visitorId);
+    }
+
+    async function bumpCounter(counterName) {
+      const ref = doc(db, "stats", "global");
+      await setDoc(ref, { createdAt: serverTimestamp() }, { merge: true });
+      await updateDoc(ref, { [counterName]: increment(1) });
+    }
+
+    async function logVisitorEvent(type, extra = {}) {
+      const vref = doc(db, "visitors", visitorId);
+      await setDoc(vref, {
+        lastEvent: type,
+        lastEventAt: serverTimestamp(),
+        ...extra
+      }, { merge: true });
+    }
+
+    // ✅ Count a visit per page load
+    bumpCounter("visits_total");
+    logVisitorEvent("visit", { userAgent: navigator.userAgent });
+
+    // Hook buttons
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+
+    // Count "No hover" once per session (not every hover)
+    noBtn?.addEventListener("mouseenter", async () => {
+      if (window.__VAL__ && window.__VAL__.noHoverLogged) return;
+      if (window.__VAL__) window.__VAL__.noHoverLogged = true;
+
+      await bumpCounter("no_hover_sessions");
+      await logVisitorEvent("no_hover");
+    });
+
+    // Count yes clicks
+    yesBtn?.addEventListener("click", async () => {
+      await bumpCounter("yes_clicks");
+      await logVisitorEvent("yes_click");
+    });
+
+    // Optional: count no click attempts
+    noBtn?.addEventListener("click", async () => {
+      await bumpCounter("no_click_attempts");
+      await logVisitorEvent("no_click_attempt");
+    });
+  </script>
+</body>
+</html>
